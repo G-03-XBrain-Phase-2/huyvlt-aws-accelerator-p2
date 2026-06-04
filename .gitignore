@@ -24,3 +24,5 @@ terraform.rc
 # OS files
 .DS_Store
 Thumbs.db
+# Private keys
+*.pem

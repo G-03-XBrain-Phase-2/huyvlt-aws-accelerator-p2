@@ -17,7 +17,7 @@ Dưới đây là tiến độ học tập và thực hành các nội dung IaC 
 | **W8** | **Day A: Terraform Basics** | 🟢 Hoàn thành | Tìm hiểu IaC, cú pháp HCL, CLI workflow, Data source, Variable và Import State. | [Xem chi tiết](cloud/w8/day-a/) |
 | | **Day B: Kubernetes Basics** | 🟡 Đang học | Đọc tài liệu Container Orchestration, Pod, Service, Probes. Setup Minikube local. | [Xem chi tiết](cloud/w8/day-b/) |
 | | **Day C: Terraform Advanced** | ⚪ Lên kế hoạch | Quản lý State (S3 & DynamoDB lock), Modules, Live Q&A và làm Test 1. | [Xem chi tiết](cloud/w8/day-c/) |
-| | **Lab: Mini K8s Platform** | ⚪ Lên kế hoạch | Hoàn thiện Lab onsite, show-and-tell nhóm và làm Test 2. | [Xem chi tiết](cloud/w8/lab/) |
+| | **Lab: Mini K8s Platform** | 🟢 Hoàn thành | Hoàn thiện Lab onsite, show-and-tell nhóm và làm Test 2. | [Xem chi tiết](cloud/w8/capstone_w8/) |
 | | **Reflection W8** | 🟡 Đang thực hiện | Ghi chép nhật ký phản hồi và bài học rút ra cuối tuần. | [Xem chi tiết](cloud/w8/reflection.md) |
 | **W9** | **GitOps & Advanced CI/CD** | ⚪ Lên kế hoạch | Học Helm, ArgoCD và Continuous Delivery. | [Thư mục W9](cloud/w9/) |
 | **W10** | **Observability & Security** | ⚪ Lên kế hoạch | Prometheus, Grafana, Canary Deployment và Security. | [Thư mục W10](cloud/w10/) |
