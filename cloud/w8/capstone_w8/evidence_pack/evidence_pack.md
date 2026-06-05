@@ -14,8 +14,11 @@ Tài liệu này chứa toàn bộ bằng chứng chứng minh việc hoàn thà
 ```bash
 terraform apply -auto-approve
 ```
-*Màn hình hiển thị kết quả tạo thành công 20 tài nguyên và in ra các outputs:*
-![Terraform Apply](output.jpg)
+* Màn hình hiển thị kết quả tạo thành công 20 tài nguyên (`apply.jpg`):
+![Terraform Apply](apply.jpg)
+
+*Thông tin đầu ra (Outputs) hiển thị sau khi hoàn thành (`output.jpg`):*
+![Terraform Outputs](output.jpg)
 
 ---
 
