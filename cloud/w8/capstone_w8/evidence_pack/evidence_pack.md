@@ -9,7 +9,7 @@ Tài liệu này chứa toàn bộ bằng chứng chứng minh việc hoàn thà
 
 ---
 
-## 📸 1. Minh chứng Chạy 1-Click thành công (`apply.jpg`)
+## 📸 1. Minh chứng Chạy 1-Click thành công
 *Lệnh thực hiện tại thư mục `cloud/w8/capstone_w8/`:*
 ```bash
 terraform apply -auto-approve
@@ -28,6 +28,7 @@ terraform apply -auto-approve
 ## 📸 3. Minh chứng App thực sự chạy trong Kubernetes (`k8s_proof.jpg`)
 *Kết nối SSH vào EC2 và chạy lệnh kiểm tra tài nguyên bên trong cụm Minikube:*
 ```bash
+minikube status
 kubectl get nodes -o wide
 kubectl get pods
 kubectl get svc
