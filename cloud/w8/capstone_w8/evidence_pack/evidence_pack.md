@@ -42,21 +42,20 @@ Bằng chứng xác nhận hạ tầng được dựng thành công tự động
 
 ---
 
-## 3. Minikube Chạy Trên EC2 (`k8s_proof.jpg`)
+## 3. Minikube Chạy Trên EC2
 
 Bằng chứng xác nhận cụm Kubernetes hoạt động khỏe mạnh bằng Minikube với Driver Docker bên trong EC2 instance (không cài ứng dụng trực tiếp lên hệ điều hành EC2).
 
-- **Lệnh chạy trên EC2:** `minikube status`
-- **Ảnh minh chứng (nằm trong file `k8s_proof.jpg`):**
-  Hiển thị trạng thái các tiến phần của Minikube:
-  - `host: Running`
-  - `kubelet: Running`
-  - `apiserver: Running`
-  - `kubeconfig: Configured`
+- **Lệnh chạy trên EC2:**
+  ```bash
+  minikube status
+  ```
+- **Ảnh minh chứng (`minikube_status.jpg`):**
+![Minikube Status](minikube_status.jpg)
 
 ---
 
-## 4. Ứng Dụng Chạy Trong Kubernetes (`k8s_proof.jpg`)
+## 4. Ứng Dụng Chạy Trong Kubernetes
 
 Bằng chứng xác nhận ứng dụng web Nginx được quản lý bằng các tài nguyên Kubernetes chuẩn (Deployment, Service NodePort).
 
@@ -66,14 +65,20 @@ Bằng chứng xác nhận ứng dụng web Nginx được quản lý bằng cá
   kubectl get pods
   kubectl get svc
   ```
-- **Ảnh minh chứng (nằm trong file `k8s_proof.jpg`):**
-  - Node `minikube` có status là `Ready`.
-  - 2 Pods `demo-app-...` có status là `Running` và `READY 1/1`.
-  - Service `demo-app-svc` hoạt động với type là `NodePort`, map cổng `80:30080`.
+- **Ảnh minh chứng (`getnodes.jpg`, `getpod.jpg`, `getsvc.jpg`):**
+
+*Trạng thái Nodes:*
+![kubectl get nodes](getnodes.jpg)
+
+*Trạng thái Pods:*
+![kubectl get pods](getpod.jpg)
+
+*Trạng thái Service:*
+![kubectl get svc](getsvc.jpg)
 
 ---
 
-## 5. Kiểm Tra Port-Forward Trên EC2 Host (`k8s_proof.jpg`)
+## 5. Kiểm Tra Port-Forward Trên EC2 Host
 
 Bằng chứng xác nhận tiến trình Port-Forwarding chạy ngầm trên EC2 lắng nghe cổng `30080` của host và đẩy dữ liệu vào Service của Minikube thành công.
 
@@ -81,23 +86,12 @@ Bằng chứng xác nhận tiến trình Port-Forwarding chạy ngầm trên EC2
   ```bash
   ps -ef | grep port-forward
   ```
-- **Ảnh minh chứng (nằm trong file `k8s_proof.jpg`):**
-  - Hiển thị tiến trình `kubectl port-forward --address 0.0.0.0 service/demo-app-svc 30080:80` đang chạy ngầm ở background.
+- **Ảnh minh chứng (`portforward.jpg`):**
+![Port Forward Process](portforward.jpg)
 
 ---
 
-## 6. Target Group Của ALB Healthy
-
-Mô tả cơ chế Load Balancer kiểm tra tình trạng hoạt động (Health Check) của máy chủ ảo EC2 trên cổng `30080`.
-
-- **Cơ chế hoạt động:**
-  - ALB thực hiện gửi các HTTP GET request định kỳ (mỗi 30 giây) vào cổng **`30080`** tại đường dẫn gốc **`/`** của EC2.
-  - Khi port-forwarding trên EC2 host nhận traffic từ ALB, nó chuyển tiếp dữ liệu vào K8s Service `demo-app-svc` và trả về mã phản hồi `200 OK` từ Nginx.
-  - ALB ghi nhận phản hồi nằm trong khoảng `200-399` và đánh giá target là **`healthy`**, cho phép mở luồng traffic công cộng từ Internet.
-
----
-
-## 7. Terraform Sử Dụng 3 Providers (Giải thích thiết kế)
+## 6. Terraform Sử Dụng 3 Providers (Giải thích thiết kế)
 
 Bằng chứng xác nhận mã nguồn của dự án sử dụng phối hợp **3 Providers** khác nhau để đáp ứng tiêu chí nghiệm thu nâng cao.
 
@@ -116,7 +110,7 @@ Bằng chứng xác nhận mã nguồn của dự án sử dụng phối hợp *
 
 ---
 
-## 8. EC2 Bootstrap Bằng User Data
+## 7. EC2 Bootstrap Bằng User Data
 
 Bằng chứng chứng minh máy ảo EC2 được tự động hóa cấu hình từ khi boot thông qua kịch bản `bootstrap.sh`.
 
@@ -131,7 +125,7 @@ Bằng chứng chứng minh máy ảo EC2 được tự động hóa cấu hình
 
 ---
 
-## 9. Terraform Destroy Thành Công (`destroy.jpg`)
+## 8. Terraform Destroy Thành Công (`destroy.jpg`)
 
 Bằng chứng chứng minh hạ tầng có thể dọn dẹp sạch sẽ chỉ bằng một lệnh duy nhất sau khi kết thúc buổi Show-and-Tell.
 
