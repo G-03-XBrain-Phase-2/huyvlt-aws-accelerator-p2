@@ -167,3 +167,13 @@ Tất cả các tài nguyên bao gồm ALB, EC2, Private Key, Subnets và VPC s�
 * **Tìm kiếm AMI động (Dynamic AMI Resolution)**: Thay vì gán cứng AMI ID (dễ bị lỗi khi đổi AWS Region hoặc khi AWS cập nhật bản vá mới), dự án sử dụng `aws_ssm_parameter` để truy vấn trực tiếp AWS SSM Parameter Store để lấy ID của hệ điều hành *Amazon Linux 2023* mới nhất tương ứng với Region được cấu hình.
 * **AWS ALB Health Check linh hoạt**: Load Balancer thực hiện kiểm tra tình trạng ứng dụng (Health Check) trực tiếp qua cổng `30080` của EC2. ALB sẽ tự động chuyển sang trạng thái `Active` ngay khi container K8s bên trong khởi động thành công và phản hồi mã trạng thái HTTP 200.
 * **Giao diện HTML đẹp mắt**: Web ứng dụng được tùy biến giao diện tối giản, tối ưu cho nhà phát triển (Cyberpunk Dashboard), có hiệu ứng animation nhấp nháy đèn báo trạng thái `LIVE`, bảng cấu chi tiết thông tin máy chủ EC2 (ID, Private IP, thời gian Build) lấy tự động thông qua EC2 Instance Metadata Service.
+
+---
+
+## 📸 Hình ảnh minh chứng (Evidence)
+
+### 1. Kết quả chạy `terraform apply` thành công:
+![Terraform Apply](evidence_pack/apply.jpg)
+
+### 2. Giao diện Cyberpunk Dashboard hiển thị thông tin Minikube:
+![ALB Web Access](evidence_pack/alb.jpg)
