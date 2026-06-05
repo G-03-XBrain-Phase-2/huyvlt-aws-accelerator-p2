@@ -15,7 +15,7 @@ Tài liệu này chứa toàn bộ bằng chứng chứng minh việc hoàn thà
 terraform apply -auto-approve
 ```
 *Màn hình hiển thị kết quả tạo thành công 20 tài nguyên và in ra các outputs:*
-![Terraform Apply](apply.jpg)
+![Terraform Apply](output.jpg)
 
 ---
 
