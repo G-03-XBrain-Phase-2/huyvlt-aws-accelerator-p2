@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XBrain AWS DevOps - Capstone Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Orbitron:wght@500;700;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #080a13;
+            --container-bg: rgba(13, 17, 33, 0.7);
+            --border-color: rgba(0, 240, 255, 0.2);
+            --glow-cyan: #00f0ff;
+            --glow-purple: #bd00ff;
+            --glow-green: #39ff14;
+            --glow-red: #ff0055;
+            --text-color: #e2e8f0;
+            --text-muted: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(189, 0, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 240, 255, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Scanline Overlay effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        .cyber-grid {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 20px 20px;
+            position: relative;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--glow-cyan), var(--glow-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--glow-cyan);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media(min-width: 768px) {
+            main {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        .card {
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 240, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.1);
+        }
+
+        /* Card corner decoration */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 15px; height: 15px;
+            background: linear-gradient(225deg, var(--glow-cyan) 45%, transparent 55%);
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            color: var(--glow-cyan);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        /* Dashboard Status Badges */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .status-item {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-green {
+            background-color: var(--glow-green);
+            box-shadow: 0 0 10px var(--glow-green);
+            animation: pulse 1.5s infinite;
+        }
+
+        .dot-red {
+            background-color: var(--glow-red);
+            box-shadow: 0 0 10px var(--glow-red);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        /* Metadata Details */
+        .meta-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.03);
+        }
+
+        .meta-key {
+            color: var(--text-muted);
+        }
+
+        .meta-val {
+            color: #38bdf8;
+            font-weight: bold;
+        }
+
+        /* Form styling */
+        .form-group {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            background-color: rgba(5, 7, 14, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 6px;
+            padding: 12px;
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--glow-cyan);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--glow-purple), var(--glow-cyan));
+            border: none;
+            border-radius: 6px;
+            padding: 14px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 240, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Table/Guestbook list styling */
+        .message-list {
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 5px;
+        }
+
+        /* Custom scrollbar */
+        .message-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .message-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .message-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .message-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 3px solid var(--glow-purple);
+            border-radius: 0 8px 8px 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .message-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .msg-author {
+            font-weight: 700;
+            color: var(--glow-cyan);
+            font-size: 0.95rem;
+        }
+
+        .msg-date {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .msg-content {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .no-messages {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* S3 Asset Card styling */
+        .s3-card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            text-align: center;
+        }
+
+        .s3-image-container {
+            width: 100%;
+            max-width: 280px;
+            height: 180px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .s3-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .s3-error-text {
+            color: var(--glow-red);
+            font-size: 0.85rem;
+            font-family: 'Roboto Mono', monospace;
+            padding: 10px;
+        }
+
+        .s3-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .s3-meta code {
+            color: var(--glow-cyan);
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-family: 'Roboto Mono', monospace;
+            letter-spacing: 1px;
+            border-top: 1px solid rgba(255,255,255,0.02);
+            margin-top: 40px;
+            background: rgba(5, 7, 14, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+
+    <header>
+        <h1 class="header-title">XBrain AWS DevOps</h1>
+        <p class="header-subtitle">Capstone Web Application</p>
+    </header>
+
+    <main>
+        <!-- Card 1: System Status -->
+        <section class="card">
+            <h2 class="card-title">
+                <span class="dot dot-green"></span> System Connections
+            </h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Network Status</span>
+                    <span class="status-badge" style="color: var(--glow-green);">
+                        <span class="dot dot-green"></span> VPC OK
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">RDS MySQL</span>
+                    {% if db_status == "Connected" %}
+                    <span class="status-badge" style="color: var(--glow-green);">
+                        <span class="dot dot-green"></span> Connected
+                    </span>
+                    {% else %}
+                    <span class="status-badge" style="color: var(--glow-red);">
+                        <span class="dot dot-red"></span> ERROR
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="status-item" style="grid-column: span 2;">
+                    <span class="status-label">S3 Storage Bucket</span>
+                    {% if s3_status == "Connected" %}
+                    <span class="status-badge" style="color: var(--glow-green);">
+                        <span class="dot dot-green"></span> Ready
+                    </span>
+                    {% else %}
+                    <span class="status-badge" style="color: var(--glow-red);">
+                        <span class="dot dot-red"></span> ERROR
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if db_status != "Connected" or s3_status != "Connected" %}
+            <div style="margin-top: 15px; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--glow-red); background: rgba(255, 0, 85, 0.05); border: 1px dashed var(--glow-red); padding: 10px; border-radius: 6px;">
+                {% if db_status != "Connected" %}<div>RDS Error: {{ db_status }}</div>{% endif %}
+                {% if s3_status != "Connected" %}<div>S3 Error: {{ s3_status }}</div>{% endif %}
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Card 2: EC2 Metadata -->
+        <section class="card">
+            <h2 class="card-title">EC2 Instance Metadata</h2>
+            <div class="meta-list">
+                <div class="meta-row">
+                    <span class="meta-key">Instance ID</span>
+                    <span class="meta-val">{{ metadata.instance_id }}</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-key">Instance Type</span>
+                    <span class="meta-val">{{ metadata.instance_type }}</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-key">Availability Zone</span>
+                    <span class="meta-val">{{ metadata.az }}</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-key">Private IP Address</span>
+                    <span class="meta-val">{{ metadata.private_ip }}</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card 3: S3 Static Asset -->
+        <section class="card">
+            <h2 class="card-title">Static S3 Image Asset</h2>
+            <div class="s3-card-content">
+                <div class="s3-image-container">
+                    {% if s3_url %}
+                    <img class="s3-image" src="{{ s3_url }}" alt="DevOps Capstone Logo">
+                    {% else %}
+                    <div class="s3-error-text">Failed to retrieve asset from S3</div>
+                    {% endif %}
+                </div>
+                <div class="s3-meta">
+                    Object Key: <code>logo.png</code><br>
+                    S3 Bucket: <code>{{ s3_bucket }}</code><br>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Loaded via IAM Role access generating an AWS Pre-signed URL.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card 4: Guestbook Form -->
+        <section class="card">
+            <h2 class="card-title">Sign the Guestbook</h2>
+            <form action="/" method="POST">
+                <div class="form-group">
+                    <label for="name">Your Name</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g. Learner Huy" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="4" required placeholder="Write your message about Week 8 Capstone here..." maxlength="500"></textarea>
+                </div>
+                <button type="submit">Deploy Entry</button>
+            </form>
+        </section>
+
+        <!-- Card 5: Guestbook Database Entries -->
+        <section class="card full-width">
+            <h2 class="card-title">Guestbook Database (RDS MySQL)</h2>
+            <div class="message-list">
+                {% if messages %}
+                    {% for msg in messages %}
+                    <div class="message-card">
+                        <div class="msg-header">
+                            <span class="msg-author">{{ msg.name }}</span>
+                            <span class="msg-date">{{ msg.date }}</span>
+                        </div>
+                        <p class="msg-content">{{ msg.message }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-messages">
+                        No entries yet. Be the first to deploy an entry!
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Võ Lê Trường Huy (XB-DN26-102) &copy; 2026 | AWS Accelerator Phase 2 Portfolio</p>
+        <p style="margin-top: 5px; font-size: 0.7rem; color: var(--text-muted);">Built with Terraform &amp; Flask | Infrastructure-as-Code</p>
+    </footer>
+</body>
+</html>
