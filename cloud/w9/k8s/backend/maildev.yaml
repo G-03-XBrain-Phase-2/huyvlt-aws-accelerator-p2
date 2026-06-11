@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: maildev
-  namespace: demo
+  namespace: argocd-test
   labels:
     app: maildev
 spec:
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: maildev
-  namespace: demo
+  namespace: argocd-test
   labels:
     app: maildev
 spec:

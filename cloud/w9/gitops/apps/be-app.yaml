@@ -1,18 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: argocd-test-be
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:
     repoURL: https://github.com/G-03-XBrain-Phase-2/huyvlt-aws-accelerator-p2.git
     targetRevision: main
-    path: cloud/w9/argocd/apps
+    path: cloud/w9/k8s/backend
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: argocd-test
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

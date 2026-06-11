@@ -18,7 +18,7 @@ spec:
         alertmanager:
           config:
             global:
-              smtp_smarthost: 'maildev.demo.svc.cluster.local:1025'
+              smtp_smarthost: 'maildev.argocd-test.svc.cluster.local:1025'
               smtp_from: 'alertmanager@prometheus.local'
               smtp_require_tls: false
             route:

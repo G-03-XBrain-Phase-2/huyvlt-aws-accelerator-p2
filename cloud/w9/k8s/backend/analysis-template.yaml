@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
   name: api-success-rate
-  namespace: demo
+  namespace: argocd-test
 spec:
   metrics:
   - name: success-rate
@@ -13,6 +13,6 @@ spec:
       prometheus:
         address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
         query: |
-          (sum(rate(flask_http_request_total{namespace="demo", status!~"5.."}[1m])) or vector(1))
+          (sum(rate(flask_http_request_total{namespace="argocd-test", status!~"5.."}[1m])) or vector(1))
           /
-          (sum(rate(flask_http_request_total{namespace="demo"}[1m])) or vector(1))
+          (sum(rate(flask_http_request_total{namespace="argocd-test"}[1m])) or vector(1))

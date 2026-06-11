@@ -4,7 +4,7 @@ metadata:
   name: api-slo-rules
   namespace: monitoring
   labels:
-    app: api
+    app: backend
     release: kube-prometheus-stack
 spec:
   groups:
@@ -12,9 +12,9 @@ spec:
     rules:
     - alert: ApiAvailabilitySloBurn
       expr: |
-        (sum(rate(flask_http_request_total{namespace="demo", status!~"5.."}[1m])) or vector(1))
+        (sum(rate(flask_http_request_total{namespace="argocd-test", status!~"5.."}[1m])) or vector(1))
         /
-        (sum(rate(flask_http_request_total{namespace="demo"}[1m])) or vector(1))
+        (sum(rate(flask_http_request_total{namespace="argocd-test"}[1m])) or vector(1))
         < 0.95
       for: 5s
       labels:
@@ -22,4 +22,4 @@ spec:
         tier: api
       annotations:
         summary: "API Success Rate SLO Violated"
-        description: "The success rate for the Flask API in the demo namespace has dropped below 95% (currently {{ $value }}). Burn rate is critical."
+        description: "The success rate for the Flask API in the argocd-test namespace has dropped below 95% (currently {{ $value }}). Burn rate is critical."
