@@ -143,3 +143,161 @@ Nhờ vào annotation `argocd.argoproj.io/sync-wave` được cấu hình trên 
    * Tích chọn: **Require status checks to pass before merging**.
    * Tìm kiếm và tích chọn check: `validate`.
 4. Bây giờ, khi bất kỳ ai mở Pull Request chỉnh sửa cấu hình trong thư mục `cloud/w9/k8s/`, GitHub Actions sẽ tự động chạy lệnh kiểm tra `kubeconform`. Nếu file YAML bị lỗi cú pháp, nút Merge sẽ bị khóa hoàn toàn.
+
+---
+
+# 🚀 Challenge "Ship Smartly" - Giải Pháp & Hướng Dẫn Thực Hành
+
+Tài liệu này hướng dẫn chi tiết cách chạy bài tập lớn **Challenge "Ship Smartly"** - kết hợp GitOps (ArgoCD), Giám sát (Prometheus, Alertmanager), Gửi email cảnh báo (Maildev) và Triển khai Canary tự động (Argo Rollouts).
+
+## 📊 1. Thiết Kế Hệ Thống Đo Lường & Ngưỡng SLO
+
+### Chỉ số SLI & Mục tiêu SLO
+Hệ thống sử dụng metric `flask_http_request_total` (được thu thập tự động từ thư viện `prometheus-flask-exporter` tích hợp trong Flask API) để đo lường độ khả dụng (Availability) của dịch vụ.
+
+* **Chỉ số SLI (Availability Rate):** Tỉ lệ các HTTP request thành công (không có mã trạng thái lỗi 5xx) trên tổng số HTTP request nhận được trong cửa sổ 1 phút.
+* **Mục tiêu SLO:** Dịch vụ phải đảm bảo tỉ lệ thành công **tối thiểu 95%** (`>= 0.95`).
+
+### Công thức Query Prometheus (PromQL)
+```promql
+(sum(rate(flask_http_request_total{namespace="demo", status!~"5.."}[1m])) or vector(1))
+/
+(sum(rate(flask_http_request_total{namespace="demo"}[1m])) or vector(1))
+```
+* **Ý nghĩa:**
+  * Lấy tốc độ request thành công (tránh status lỗi `5..`) chia cho tổng tốc độ request.
+  * Sử dụng toán tử `or vector(1)` để đảm bảo nếu không có traffic, tỉ lệ thành công vẫn trả về `1` (100%), tránh lỗi chia cho 0 hoặc giá trị `NaN` làm hỏng quá trình tự động phân tích.
+
+### Quy tắc Cảnh báo (PrometheusRule)
+Quy tắc cảnh báo SLO được cấu hình trong `monitoring` namespace để Prometheus Operator tự động nạp. Khi tỉ lệ thành công rơi xuống dưới 95% trong khoảng thời gian liên tiếp là **5 giây** (`for: 5s`), cảnh báo `ApiAvailabilitySloBurn` sẽ chuyển từ trạng thái `Pending` sang `Firing`.
+
+---
+
+## ⚡ 2. Cơ Chế Canary Tự Động (AnalysisTemplate)
+
+Thay vì phải dừng lại chờ người phê duyệt thủ công, chiến lược Canary được tự động hóa bằng cách kết nối trực tiếp với Prometheus thông qua `AnalysisTemplate` (`api-success-rate`):
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: api-success-rate
+spec:
+  metrics:
+  - name: success-rate
+    interval: 15s
+    successCondition: len(result) == 0 or result[0] >= 0.95
+    failureLimit: 5
+    provider:
+      prometheus:
+        address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+        query: ...
+```
+
+* **Chiến dịch triển khai Canary:**
+  * **Bước 1:** Chuyển **25%** traffic sang phiên bản mới. Dừng lại **1 phút** để phân tích nền.
+  * **Bước 2:** Chuyển **50%** traffic sang phiên bản mới. Dừng lại **1 phút** để phân tích nền.
+  * **Bước 3:** Chuyển **100%** traffic (hoàn tất rollout).
+* **Tự động bảo vệ (Auto-abort & Rollback):**
+  * `AnalysisRun` sẽ liên tục chạy truy vấn Prometheus mỗi **15 giây**.
+  * Nếu tỉ lệ thành công `< 95%`, lần đo đó sẽ bị coi là `Failed`.
+  * Nếu số lần đo bị lỗi tích lũy đạt tới **5 lần** (`failureLimit: 5`), `AnalysisRun` sẽ chuyển trạng thái sang `Failed`.
+  * Argo Rollouts lập tức phát hiện phân tích thất bại, **hủy bỏ quá trình canary (auto-abort)** và scale-down ReplicaSet phiên bản mới về 0, đồng thời scale-up ReplicaSet của phiên bản ổn định trước đó (v1/v2) trở lại 100% để bảo vệ người dùng.
+
+---
+
+## 📧 3. Cấu Hình Alertmanager & Gửi Email Cảnh Báo (Maildev)
+
+* **Maildev:** Được deploy trong namespace `demo` để đóng vai trò làm SMTP Server giả lập (cổng `1025`) và cung cấp Web UI xem email (cổng `1080`).
+* **Alertmanager Routing:** Được cấu hình thông qua Helm values của `kube-prometheus-stack` để chuyển tiếp tất cả alerts tới SMTP của Maildev:
+  ```yaml
+  alertmanager:
+    config:
+      global:
+        smtp_smarthost: 'maildev.demo.svc.cluster.local:1025'
+        smtp_from: 'alertmanager@prometheus.local'
+        smtp_require_tls: false
+      route:
+        receiver: 'email-notifications'
+      receivers:
+      - name: 'email-notifications'
+        email_configs:
+        - to: 'huyvlt@personal.email'
+  ```
+
+---
+
+## 🛠️ 4. Hướng Dẫn Các Bước Kiểm Thử Chi Tiết
+
+### 🚀 Chuẩn bị môi trường
+1. Khởi động Minikube w9 profile:
+   ```bash
+   minikube start -p w9 --cpus=4 --memory=6g
+   ```
+2. Build Docker images cho API ứng dụng và nạp vào cụm:
+   ```bash
+   docker build -t w9-api:1 cloud/w9/app/
+   docker tag w9-api:1 w9-api:2
+   docker tag w9-api:1 w9-api:3
+   minikube image load w9-api:1 -p w9
+   minikube image load w9-api:2 -p w9
+   minikube image load w9-api:3 -p w9
+   ```
+
+### 🚀 Bước 1: Khởi tạo GitOps Pipeline (ArgoCD)
+1. Thêm các file manifests vào Git, commit và push lên GitHub nhánh `main`.
+2. Apply root application (chỉ cần làm một lần):
+   ```bash
+   kubectl apply -f cloud/w9/argocd/root.yaml
+   ```
+3. Đợi cho tất cả các application (`api`, `argo-rollouts`, `kube-prometheus-stack`) được đồng bộ sang trạng thái `Synced` và `Healthy` trên giao diện ArgoCD.
+
+### 🚀 Bước 2: Tạo Traffic Liên Tục (Load Testing)
+Bắt đầu tạo traffic giả lập truy cập vào API để có dữ liệu vẽ metrics:
+```bash
+kubectl -n demo run load --image=busybox --restart=Never -- sh -c "while true; do wget -qO- api:8080/; sleep 0.1; done"
+```
+
+### 🚀 Bước 3: Port-Forward Tiện Ích Ra Máy Cá Nhân
+Mở các terminal mới để port-forward Prometheus và Maildev:
+```bash
+# Prometheus Web UI (Xem đồ thị & trạng thái cảnh báo)
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
+
+# Maildev Web UI (Xem email cảnh báo gửi tới)
+kubectl -n demo port-forward svc/maildev 1080:1080
+```
+
+### 🚀 Bước 4: Kiểm thử Canary Happy Path (v1 ➜ v2)
+1. Sửa file `cloud/w9/k8s/api.yaml` để cập nhật `image: w9-api:2` và `VERSION: v2` (ERROR_RATE giữ nguyên là `"0"`).
+2. Commit và push lên GitHub.
+3. ArgoCD sẽ tự động phát hiện thay đổi và đồng bộ. Bạn sẽ thấy 1 pod v2 được tạo ra (25% weight) và 3 pod v1 chạy song song.
+4. Quá trình phân tích `AnalysisRun` sẽ chạy nền. Vì tỉ lệ thành công đạt 100% (phiên bản tốt), sau 1 phút, weight tăng lên 50% (2 pod v2, 2 pod v1). Sau tiếp 1 phút, weight tăng lên 100% (4 pod v2, 0 pod v1). Quá trình kết thúc thành công!
+
+### 🚀 Bước 5: Kiểm thử Canary Auto-Abort & Rollback (v2 ➜ v3 lỗi)
+1. Sửa file `cloud/w9/k8s/api.yaml` để cập nhật `image: w9-api:3`, `VERSION: v3` và **`ERROR_RATE: "0.5"`** (giả lập v3 bị lỗi 500 với tỉ lệ 50%).
+2. Commit và push lên GitHub.
+3. ArgoCD đồng bộ và scale-up 1 pod v3 (nhận 25% traffic).
+4. Do v3 nhận 25% traffic và lỗi 50% số request, tỉ lệ thành công tổng thể giảm xuống **~87%** (dưới ngưỡng SLO 95%).
+5. Quan sát trạng thái phân tích:
+   ```bash
+   kubectl get analysisrun -n demo
+   ```
+   Sau 5 lần đo thất bại liên tục, `AnalysisRun` chuyển sang trạng thái `Failed`.
+6. Lập tức, Argo Rollouts kích hoạt **Auto-abort**: pod v3 bị xóa bỏ (`DESIRED 0`), cụm tự động scale-up phiên bản v2 ổn định trở lại 4 replicas.
+
+### 🚀 Bước 6: Kiểm tra Email Cảnh Báo SLO trong Maildev
+1. Mở trình duyệt truy cập địa chỉ Maildev Web UI: [http://localhost:1080](http://localhost:1080).
+2. Bạn sẽ thấy email gửi tới từ `alertmanager@prometheus.local` gửi đến `huyvlt@personal.email` với tiêu đề:
+   **`[FIRING:1] ApiAvailabilitySloBurn (monitoring/kube-prometheus-stack-prometheus critical api)`**
+3. Email chứa chi tiết cảnh báo SLO bị vi phạm, mô tả tỉ lệ thành công hiện tại của dịch vụ bị giảm sâu.
+
+### 🚀 Bước 7: Thực Hiện Rollback GitOps Đúng Chuẩn (< 5 phút)
+Sau khi Canary tự động abort trong cụm, Git repository của bạn vẫn đang khai báo phiên bản lỗi (v3). Để đồng bộ lại Git, ta cần thực hiện rollback commit trên Git trong vòng chưa đầy 5 phút:
+```bash
+# Quay ngược cấu hình api.yaml về phiên bản v2 trước đó
+git checkout HEAD~1 -- cloud/w9/k8s/api.yaml
+git commit -m "rollback(api): revert to stable v2 configuration"
+git push origin main
+```
+ArgoCD sẽ nhận diện commit mới, tự động đồng bộ và hệ thống của bạn hoàn toàn trở lại trạng thái xanh, sạch, ổn định.
