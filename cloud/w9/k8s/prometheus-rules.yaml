@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: api-slo-rules
+  namespace: demo
+  labels:
+    app: api
+    release: kube-prometheus-stack
+spec:
+  groups:
+  - name: api-slo
+    rules:
+    - alert: ApiAvailabilitySloBurn
+      expr: |
+        (sum(rate(flask_http_request_total{namespace="demo", status!~"5.."}[1m])) or vector(1))
+        /
+        (sum(rate(flask_http_request_total{namespace="demo"}[1m])) or vector(1))
+        < 0.95
+      for: 30s
+      labels:
+        severity: critical
+        tier: api
+      annotations:
+        summary: "API Success Rate SLO Violated"
+        description: "The success rate for the Flask API in the demo namespace has dropped below 95% (currently {{ $value }}). Burn rate is critical."
