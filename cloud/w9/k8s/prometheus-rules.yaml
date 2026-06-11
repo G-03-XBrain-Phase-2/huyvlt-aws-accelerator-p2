@@ -16,7 +16,7 @@ spec:
         /
         (sum(rate(flask_http_request_total{namespace="demo"}[1m])) or vector(1))
         < 0.95
-      for: 30s
+      for: 5s
       labels:
         severity: critical
         tier: api
