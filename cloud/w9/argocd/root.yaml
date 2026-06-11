@@ -4,6 +4,7 @@ metadata:
   name: root
   namespace: argocd
 spec:
+  project: default
   source:
     repoURL: https://github.com/G-03-XBrain-Phase-2/huyvlt-aws-accelerator-p2.git
     targetRevision: main
