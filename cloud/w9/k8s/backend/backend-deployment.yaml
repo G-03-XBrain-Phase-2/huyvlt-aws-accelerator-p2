@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: argocd-test-backend:v2
+        image: argocd-test-backend:v3
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -27,9 +27,9 @@ spec:
             name: backend-config
         env:
         - name: ERROR_RATE
-          value: "0"
+          value: "0.5"
         - name: VERSION
-          value: "v2"
+          value: "v3"
         readinessProbe:
           httpGet:
             path: /healthz
