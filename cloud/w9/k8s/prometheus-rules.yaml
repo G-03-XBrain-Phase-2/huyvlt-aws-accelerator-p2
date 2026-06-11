@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: api-slo-rules
-  namespace: demo
+  namespace: monitoring
   labels:
     app: api
     release: kube-prometheus-stack
