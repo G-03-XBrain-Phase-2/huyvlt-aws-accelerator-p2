@@ -1,0 +1,19 @@
+{
+  "filterName": "RootAccountLoginFilter",
+  "filterPattern": "{ $.userIdentity.type = \"Root\" && $.eventType != \"AwsServiceEvent\" }",
+  "metricTransformations": [
+    {
+      "metricName": "RootAccountLoginCount",
+      "metricNamespace": "Security",
+      "metricValue": "1",
+      "defaultValue": 0,
+      "unit": "Count"
+    }
+  ],
+  "_comments": {
+    "filterPattern_explained": "Khớp với các event mà: (1) userIdentity.type = Root (người dùng root), (2) eventType != AwsServiceEvent (loại bỏ các sự kiện nội bộ của AWS service, chỉ giữ lại hành động thực sự của người dùng)",
+    "metricValue": "Mỗi lần filter match => cộng thêm 1 vào metric",
+    "defaultValue": "Khi không có event nào trong period => metric = 0 (không trigger alarm)",
+    "namespace": "Security — namespace tùy chỉnh, hiển thị trong CloudWatch Metrics → Security"
+  }
+}

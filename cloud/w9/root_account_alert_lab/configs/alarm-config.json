@@ -1,0 +1,21 @@
+{
+  "alarm_name": "RootAccountLogin-Alert",
+  "alarm_description": "SECURITY ALERT: Root account đã được sử dụng để đăng nhập! Điều tra ngay lập tức.",
+  "metric_name": "RootAccountLoginCount",
+  "namespace": "Security",
+  "statistic": "Sum",
+  "period": 300,
+  "evaluation_periods": 1,
+  "datapoints_to_alarm": 1,
+  "threshold": 1,
+  "comparison_operator": "GreaterThanOrEqualToThreshold",
+  "treat_missing_data": "notBreaching",
+  "dimensions": [],
+  "_comments": {
+    "statistic": "Sum (không phải Average) vì chúng ta muốn đếm tổng số lần login",
+    "threshold": "1 — BẤT KỲ một lần root login nào cũng phải trigger alarm",
+    "comparison_operator": "GreaterThanOrEqualToThreshold — >= 1",
+    "treat_missing_data": "notBreaching — khi không có login (bình thường) thì không alarm",
+    "dimensions": "Để trống — metric này không có dimension, áp dụng cho toàn account"
+  }
+}

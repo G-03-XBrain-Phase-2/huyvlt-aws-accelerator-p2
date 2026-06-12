@@ -1,0 +1,26 @@
+{
+  "alarm_name": "High-CPU-Alert",
+  "alarm_description": "Cảnh báo khi CPU của EC2 vượt 80% trong 5 phút liên tiếp",
+  "metric_name": "CPUUtilization",
+  "namespace": "AWS/EC2",
+  "statistic": "Average",
+  "period": 300,
+  "evaluation_periods": 1,
+  "datapoints_to_alarm": 1,
+  "threshold": 80,
+  "comparison_operator": "GreaterThanThreshold",
+  "treat_missing_data": "notBreaching",
+  "dimensions": [
+    {
+      "Name": "InstanceId",
+      "Value": "<YOUR_INSTANCE_ID>"
+    }
+  ],
+  "alarm_actions": [
+    "arn:aws:sns:<REGION>:<ACCOUNT_ID>:cpu-alert-topic"
+  ],
+  "ok_actions": [
+    "arn:aws:sns:<REGION>:<ACCOUNT_ID>:cpu-alert-topic"
+  ],
+  "insufficient_data_actions": []
+}
