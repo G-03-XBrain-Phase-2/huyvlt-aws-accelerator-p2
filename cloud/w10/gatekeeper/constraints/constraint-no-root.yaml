@@ -1,0 +1,15 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowRoot
+metadata:
+  name: disallow-root
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+    - apiGroups: [""]
+      kinds: ["Pod"]
+    excludedNamespaces:
+    - kube-system
+    - monitoring
+    - argocd
+    - gatekeeper-system

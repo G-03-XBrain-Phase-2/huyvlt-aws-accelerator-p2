@@ -1,0 +1,54 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdisallowlatesttag
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDisallowLatestTag
+  targets:
+  - target: admission.k8s.gatekeeper.sh
+    rego: |
+      package k8sdisallowlatesttag
+
+      violation[{"msg": msg}] {
+        container := input_containers[_]
+        image := container.image
+        not has_digest(image)
+        tag := get_tag(image)
+        is_latest(tag)
+        msg := sprintf("Container '%v' uses disallowed image tag '%v'. Latest or empty tags are not allowed.", [container.name, tag])
+      }
+
+      input_containers[c] {
+        c := input.review.object.spec.containers[_]
+      }
+      input_containers[c] {
+        c := input.review.object.spec.initContainers[_]
+      }
+      input_containers[c] {
+        c := input.review.object.spec.ephemeralContainers[_]
+      }
+
+      has_digest(image) {
+        contains(image, "@")
+      }
+
+      get_tag(image) = tag {
+        parts := split(image, ":")
+        count(parts) > 1
+        tag := parts[count(parts) - 1]
+      }
+      get_tag(image) = tag {
+        parts := split(image, ":")
+        count(parts) == 1
+        tag := "latest"
+      }
+
+      is_latest(tag) {
+        tag == "latest"
+      }
+      is_latest(tag) {
+        tag == ""
+      }

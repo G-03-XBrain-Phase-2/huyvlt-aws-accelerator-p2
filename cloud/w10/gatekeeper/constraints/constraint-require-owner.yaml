@@ -1,0 +1,19 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: require-owner-label
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+    - apiGroups: ["apps"]
+      kinds: ["Deployment"]
+    - apiGroups: ["argoproj.io"]
+      kinds: ["Rollout"]
+    excludedNamespaces:
+    - kube-system
+    - monitoring
+    - argocd
+    - gatekeeper-system
+  parameters:
+    labels: ["owner"]

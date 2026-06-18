@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deploy-allowed
+  namespace: demo
+  labels:
+    app: test
+    owner: team-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      securityContext:
+        runAsUser: 1000
+      containers:
+      - name: test
+        image: nginx:1.25.1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi

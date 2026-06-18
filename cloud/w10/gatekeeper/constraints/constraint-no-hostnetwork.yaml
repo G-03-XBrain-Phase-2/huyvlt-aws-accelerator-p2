@@ -1,0 +1,15 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowHostNetwork
+metadata:
+  name: disallow-hostnetwork
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+    - apiGroups: [""]
+      kinds: ["Pod"]
+    excludedNamespaces:
+    - kube-system
+    - monitoring
+    - argocd
+    - gatekeeper-system

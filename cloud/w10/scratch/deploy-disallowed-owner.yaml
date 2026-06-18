@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deploy-no-owner
+  namespace: demo
+  # No owner label in metadata.labels
+  labels:
+    app: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      containers:
+      - name: test
+        image: nginx:1.25.1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
