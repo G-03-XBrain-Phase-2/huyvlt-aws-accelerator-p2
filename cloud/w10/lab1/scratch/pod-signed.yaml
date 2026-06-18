@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-signed
+  namespace: demo
+spec:
+  securityContext:
+    runAsUser: 1000
+  containers:
+  - name: test
+    image: ghcr.io/g-03-xbrain-phase-2/w10-api@sha256:37a947d620cc32dbe58fc24bf3e308ff3a6476ee5c189a0698086db6a582f73b
+    resources:
+      limits:
+        cpu: 100m
+        memory: 64Mi

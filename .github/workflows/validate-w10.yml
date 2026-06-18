@@ -28,5 +28,8 @@ jobs:
           cloud/w10/lab1/app-common/ \
           cloud/w10/argocd/ \
           cloud/w10/lab1/rbac/ \
-          cloud/w10/lab1/gatekeeper/constraints/
+          cloud/w10/lab1/gatekeeper/constraints/ \
+          cloud/w10/lab2/eso/ \
+          cloud/w10/lab2/policies/
+
 
