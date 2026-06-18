@@ -26,3 +26,9 @@ terraform.rc
 Thumbs.db
 # Private keys
 *.pem
+
+# Downloaded templates (local only)
+temp-main/
+
+# Sensitive secrets (never commit)
+**/email-secret.yaml
