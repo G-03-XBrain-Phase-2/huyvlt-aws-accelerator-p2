@@ -26,6 +26,7 @@ terraform.rc
 Thumbs.db
 # Private keys
 *.pem
+*.key
 
 # Downloaded templates (local only)
 temp-main/

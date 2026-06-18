@@ -9,7 +9,6 @@ spec:
     - key:
         data: |
           -----BEGIN PUBLIC KEY-----
-          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9m+9Y5o53F8aXq3/QoB2j0kU2QO8
-          1Z7R0t8509y3/QoB2j0kU2QO81Z7R0t8509y3/QoB2j0kU2QO81Z7R0t8509y3
-          [DÁN NỘI DUNG COSIGN.PUB CỦA BẠN VÀO ĐÂY]
+          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1nuEAn5c04888CUSXq0hyUQRECEj
+          JtWDg7jqsHU9d3g/zmDvaME3rMxepz8OIV4EjLyeGEbF0hHZgGN476WFmg==
           -----END PUBLIC KEY-----
