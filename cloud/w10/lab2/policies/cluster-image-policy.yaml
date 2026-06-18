@@ -5,10 +5,13 @@ metadata:
 spec:
   images:
     - glob: "ghcr.io/*/w10-api*"
+  mode: enforce
   authorities:
-    - key:
+    - name: authority-0
+      key:
         data: |
           -----BEGIN PUBLIC KEY-----
           MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1nuEAn5c04888CUSXq0hyUQRECEj
           JtWDg7jqsHU9d3g/zmDvaME3rMxepz8OIV4EjLyeGEbF0hHZgGN476WFmg==
           -----END PUBLIC KEY-----
+
