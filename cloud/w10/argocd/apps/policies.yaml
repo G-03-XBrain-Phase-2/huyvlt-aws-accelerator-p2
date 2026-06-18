@@ -1,0 +1,22 @@
+# ArgoCD App: Đồng bộ cấu hình ClusterImagePolicy cho Cosign verification
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cosign-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/G-03-XBrain-Phase-2/huyvlt-aws-accelerator-p2.git
+    path: cloud/w10/policies
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - ServerSideApply=true

@@ -1,0 +1,23 @@
+# ArgoCD App: Đồng bộ cấu hình SecretStore và ExternalSecret
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/G-03-XBrain-Phase-2/huyvlt-aws-accelerator-p2.git
+    path: cloud/w10/eso
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - ServerSideApply=true

@@ -20,5 +20,18 @@ def index():
 def healthz():
     return "ok", 200
 
+@app.get("/secret")
+def get_secret():
+    secret_path = "/etc/secrets/password"
+    if os.path.exists(secret_path):
+        try:
+            with open(secret_path, "r") as f:
+                password = f.read().strip()
+            return jsonify(password=password)
+        except Exception as e:
+            return jsonify(error=str(e)), 500
+    return jsonify(error="Secret file not found at /etc/secrets/password"), 404
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
+
