@@ -3,13 +3,7 @@ name: validate-w10
 on:
   pull_request:
     paths:
-    - 'cloud/w10/app-api/**'
-    - 'cloud/w10/app-analysis/**'
-    - 'cloud/w10/app-alert/**'
-    - 'cloud/w10/app-common/**'
-    - 'cloud/w10/argocd/**'
-    - 'cloud/w10/rbac/**'
-    - 'cloud/w10/gatekeeper/**'
+    - 'cloud/w10/**'
 
 jobs:
   validate:
@@ -28,10 +22,11 @@ jobs:
     - name: Validate manifests
       run: |
         kubeconform -strict -summary -ignore-missing-schemas \
-          cloud/w10/app-api/ \
-          cloud/w10/app-analysis/ \
-          cloud/w10/app-alert/ \
-          cloud/w10/app-common/ \
+          cloud/w10/lab1/app-api/ \
+          cloud/w10/lab1/app-analysis/ \
+          cloud/w10/lab1/app-alert/ \
+          cloud/w10/lab1/app-common/ \
           cloud/w10/argocd/ \
-          cloud/w10/rbac/ \
-          cloud/w10/gatekeeper/constraints/
+          cloud/w10/lab1/rbac/ \
+          cloud/w10/lab1/gatekeeper/constraints/
+
