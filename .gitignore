@@ -32,3 +32,8 @@ temp-main/
 
 # Sensitive secrets (never commit)
 **/email-secret.yaml
+
+# Local binaries and tools
+bin/
+*.exe
+
