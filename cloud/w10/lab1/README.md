@@ -26,6 +26,17 @@ kubectl get applications -n argocd
 ```
 *   **Kỳ vọng**: Ứng dụng `rbac` và `gatekeeper-constraints` chuyển sang trạng thái **`Synced`** và **`Healthy`**.
 
+### Bước C: Truy cập giao diện ArgoCD UI để giám sát
+1.  **Mở Port-forward** (chạy lệnh này trên một cửa sổ terminal mới):
+    ```bash
+    kubectl -n argocd port-forward svc/argocd-server 8080:443
+    ```
+2.  **Lấy mật khẩu tài khoản `admin`** (chạy trên PowerShell):
+    ```powershell
+    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }; echo ""
+    ```
+3.  **Đường dẫn truy cập cục bộ**: [https://localhost:8080](https://localhost:8080)
+
 ---
 
 ## 🧪 3. Hướng Dẫn Kiểm Thử & Nghiệm Thu
