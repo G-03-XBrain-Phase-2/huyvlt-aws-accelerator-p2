@@ -37,7 +37,7 @@ Tài liệu này hướng dẫn cách thực hành, rotate secret và nghiệm t
 ---
 
 ### Bước 2: Thực hiện xoay vòng (Rotate) Secret
-1. Mở file [secret-store.yaml](file:///c:/Project%20Web/huyvlt-aws-accelerator-p2/cloud/w10/eso/secret-store.yaml) và thay đổi giá trị mật khẩu:
+1. Mở file [secret-store.yaml](file:///c:/Project%20Web/huyvlt-aws-accelerator-p2/cloud/w10/lab2/eso/secret-store.yaml) và thay đổi giá trị mật khẩu:
    ```yaml
    # Thay đổi từ:
    # value: "initial-db-password-123"
@@ -46,7 +46,7 @@ Tài liệu này hướng dẫn cách thực hành, rotate secret và nghiệm t
    ```
 2. Thực hiện apply trực tiếp lên cụm để thấy kết quả ngay lập tức (hoặc commit/push git để ArgoCD sync):
    ```bash
-   kubectl apply -f cloud/w10/eso/secret-store.yaml
+   kubectl apply -f cloud/w10/lab2/eso/secret-store.yaml
    ```
 
 ---

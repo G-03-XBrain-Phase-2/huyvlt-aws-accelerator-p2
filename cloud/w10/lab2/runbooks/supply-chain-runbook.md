@@ -41,7 +41,7 @@ docker run --rm -v "c:\Project Web\huyvlt-aws-accelerator-p2\cloud\w10\signing:/
      - Tên: `COSIGN_PASSWORD` -> Nội dung: Mật khẩu bạn nhập lúc tạo khóa (bỏ qua nếu không đặt mật khẩu).
 
 2. **Cập nhật ClusterImagePolicy**:
-   - Mở file [cluster-image-policy.yaml](file:///c:/Project%20Web/huyvlt-aws-accelerator-p2/cloud/w10/policies/cluster-image-policy.yaml).
+   - Mở file [cluster-image-policy.yaml](file:///c:/Project%20Web/huyvlt-aws-accelerator-p2/cloud/w10/lab2/policies/cluster-image-policy.yaml).
    - Thay thế toàn bộ phần `[DÁN NỘI DUNG COSIGN.PUB CỦA BẠN VÀO ĐÂY]` bằng nội dung khóa công khai từ file `cosign.pub` của bạn.
    - Ví dụ cấu hình sau khi hoàn thành:
      ```yaml
@@ -56,7 +56,7 @@ docker run --rm -v "c:\Project Web\huyvlt-aws-accelerator-p2\cloud\w10\signing:/
 3. **Push cấu hình lên GitHub**:
    Đảm bảo file `cosign.key` đã được gitignore (đã có quy tắc `*.key` / `*.exe`). Push code lên repo:
    ```bash
-   git add cloud/w10/policies/cluster-image-policy.yaml cloud/w10/signing/cosign.pub
+   git add cloud/w10/lab2/policies/cluster-image-policy.yaml cloud/w10/lab2/signing/cosign.pub
    git commit -m "chore(w10): add cosign public key and policy configuration"
    git push origin main
    ```
