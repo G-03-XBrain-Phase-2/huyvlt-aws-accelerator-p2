@@ -1,151 +1,135 @@
 # HƯỚNG DẪN HỌC TẬP & THỰC HÀNH · WEEK 10
-## Chủ đề: Secure & Operate (RBAC + Admission Policy)
+## Chủ đề: Secure & Operate (RBAC + Admission Policy + Secrets + Supply Chain)
 
-Chào mừng bạn đến với Week 10! Tài liệu này tóm tắt toàn bộ phần **Lý thuyết cần nắm vững (Cần học gì)** và **Các bước thực hành chi tiết (Cần làm gì)** để hoàn thành mục tiêu thiết lập hạ tầng bảo mật cấp cụm (Cluster-level Enforcement) sử dụng RBAC và OPA Gatekeeper.
-
----
-
-## 🗺️ PHẦN 1: BẢN ĐỒ KIẾN THỨC (Cần học gì để hiểu?)
-
-### 1.1. Tại sao cần Cluster-level Enforcement?
-Trong các tuần trước, chúng ta đã xây dựng cụm Kubernetes (W8), GitOps & Observability & Canary (W9). Tuy nhiên, cụm K8s lúc này giống như "cái chợ" - không có rào cản ngăn chặn sự cố.
-* **Vấn đề**: Developer có thể vô tình xóa namespace `prod`, kéo image chứa CVE nguy hiểm, quên set limits RAM/CPU dẫn đến sập Node (eviction), hoặc chạy ứng dụng dưới quyền root.
-* **Giải pháp**: Phải thực thi chính sách chặn vi phạm **TẠI CỤM** (ngay từ API Server), không phụ thuộc vào lời hứa của lập trình viên.
-* **2 lớp kiểm soát chính**:
-  1. **RBAC**: Trả lời câu hỏi **"Ai (Who) được phép thực hiện hành động gì (What)?"**
-  2. **Admission Policy**: Trả lời câu hỏi **"Tài nguyên được tạo ra có cấu hình thế nào (How)?"**
+Chào mừng bạn đến với Week 10! Tài liệu này được thiết kế đặc biệt giúp bạn đi từ **con số 0** (hoặc người mất gốc) có thể hiểu rõ bản chất và tự tay vận hành hệ thống bảo mật cấp cụm (Cluster-level Security) trên Kubernetes.
 
 ---
 
-### 1.2. Lớp 1: RBAC (Role-Based Access Control)
-RBAC kiểm soát quyền truy cập tài nguyên của cụm dựa trên vai trò. Nó bao gồm 4 khái niệm cốt lõi chia thành 2 cặp:
+## 🗺️ PHẦN 1: BẢN ĐỒ KIẾN THỨC (Cho người mới bắt đầu)
 
-#### 🔹 Định nghĩa quyền (Quyền làm gì?)
-* **Role**: Định nghĩa quyền trong phạm vi **1 Namespace** cụ thể (ví dụ: chỉ được thao tác trong namespace `demo`).
-* **ClusterRole**: Định nghĩa quyền trên **Toàn cụm** (Cluster-wide), áp dụng cho mọi namespace và các tài nguyên không thuộc namespace nào (như Nodes, Namespaces, PersistentVolumes).
+Để dễ hình dung, hãy tưởng tượng cụm Kubernetes của bạn là một **Sân bay quốc tế**:
+1.  **Hành khách** (Users, Pods) muốn vào sân bay và thực hiện các hoạt động.
+2.  **Lớp 1: RBAC** giống như **Hộ chiếu (Passport) & Thị thực (Visa)**. Nó xác định: Bạn là ai? Bạn có quyền đi vào phòng chờ VIP hay không? Bạn có được bay không?
+3.  **Lớp 2: Admission Policy (Gatekeeper)** giống như **Máy quét an ninh hành lý**. Cho dù Visa của bạn có hợp lệ đi chăng nữa, nếu trong vali của bạn có chứa hàng cấm (như ma túy, chất nổ - tương đương với image `:latest`, chạy quyền root, thiếu limit tài nguyên), bạn vẫn sẽ bị chặn đứng tại cửa an ninh.
+4.  **Lớp 3: Secrets Operator (ESO)** giống như **Két sắt ngân hàng thông minh**. Thay vì bạn tự mang theo vàng bạc (mật khẩu) trên người và dễ bị cướp (commit lên Git), bạn gửi nó ở một két sắt bảo mật trên mây (AWS Secrets Manager). Khi cần, ngân hàng sẽ tự động chuyển vào ví của bạn (K8s Secret) một cách an toàn và tự cập nhật mỗi 15 giây.
+5.  **Lớp 4: Supply Chain Security (Trivy + Cosign)** giống như **Tem chống hàng giả & Kiểm dịch**. Image trước khi xuất xưởng phải được quét virus (Trivy) và dán tem kiểm định chất lượng (Cosign). Sân bay sẽ quét mã QR trên tem này, nếu tem giả hoặc không có tem ➔ Cấm bay lập tức.
 
-#### 🔹 Gán quyền (Gán cho ai?)
-* **RoleBinding**: Gán một `Role` hoặc `ClusterRole` cho đối tượng cụ thể (User/Group/ServiceAccount) trong phạm vi **1 Namespace**.
-* **ClusterRoleBinding**: Gán một `ClusterRole` trên phạm vi **Toàn cụm**.
+---
 
-| Khái niệm | Phạm vi (Scope) | Tài nguyên áp dụng | Thường dùng cho |
-| :--- | :--- | :--- | :--- |
-| **Role** | Namespace | Pods, Deployments, Services, v.v. | Developer làm việc trong Namespace riêng |
-| **ClusterRole** | Cluster | Nodes, Namespaces, Pods (toàn cụm) | SRE, Auditor, Cluster Admin |
-| **RoleBinding** | Namespace | Gán quyền trong 1 Namespace cụ thể | Gán quyền SRE/Viewer chỉ cho Namespace test |
-| **ClusterRoleBinding** | Cluster | Gán quyền trên toàn bộ các Namespace | Gán quyền SRE toàn cụm cho Bob, Viewer cho Carol |
+### 👥 1.1. Lớp 1: RBAC (Role-Based Access Control)
+RBAC là cơ chế kiểm soát quyền hạn dựa trên vai trò. Để hiểu RBAC, bạn chỉ cần nhớ **3 mảnh ghép cốt lõi**:
 
-#### 📊 Sơ đồ mối quan hệ RBAC
-```mermaid
-graph TD
-    subgraph "Đối tượng (Subjects)"
-        User[User / Group]
-        SA[ServiceAccount]
-    end
+#### 1. Đối tượng (Subject) - "Ai?"
+*   **User:** Người dùng vật lý (như `alice`, `bob` dùng lệnh `kubectl`).
+*   **Group:** Nhóm người dùng (ví dụ: nhóm `developers`, nhóm `sre`).
+*   **ServiceAccount (SA):** Tài khoản dành riêng cho ứng dụng chạy bên trong Pod (ví dụ: Prometheus cần SA có quyền đọc danh sách Pods để thu thập số liệu).
 
-    subgraph "Gán quyền (Bindings)"
-        RB[RoleBinding <br><i>Namespace Scope</i>]
-        CRB[ClusterRoleBinding <br><i>Cluster Scope</i>]
-    end
+#### 2. Tài nguyên (Resource) & Hành động (Verb) - "Làm gì với cái gì?"
+*   **Resource:** `pods`, `deployments`, `services`, `secrets`, `nodes`, `namespaces`...
+*   **Verb (Hành động):** 
+    *   `get`: Xem chi tiết 1 tài nguyên.
+    *   `list`: Xem danh sách tài nguyên.
+    *   `create`: Tạo mới.
+    *   `update` / `patch`: Sửa đổi cấu hình.
+    *   `delete`: Xóa bỏ.
 
-    subgraph "Định nghĩa quyền (Roles)"
-        R[Role <br><i>Namespace Scope</i>]
-        CR[ClusterRole <br><i>Cluster Scope</i>]
-    end
+#### 3. Bản quyền (Role) & Gán quyền (Binding) - "Gán quyền thế nào?"
+Kubernetes chia quyền hạn thành 2 cấp độ phạm vi (Scope):
+*   **Cấp độ Namespace (Tỉnh lẻ):**
+    *   **Role (Giấy thông hành tỉnh):** Định nghĩa danh sách hành động được phép bên trong **1 Namespace** cụ thể (ví dụ: chỉ được tạo pod trong namespace `demo`).
+    *   **RoleBinding (Gán quyền tỉnh):** Trao tờ giấy `Role` đó cho một User/SA trong namespace đó.
+*   **Cấp độ Cluster (Toàn quốc):**
+    *   **ClusterRole (Giấy thông hành toàn quốc):** Định nghĩa quyền hạn trên toàn bộ cụm, áp dụng cho mọi namespace hoặc tài nguyên hệ thống (như Nodes, Namespaces).
+    *   **ClusterRoleBinding (Gán quyền toàn quốc):** Trao tờ giấy `ClusterRole` cho một User/SA để họ có quyền hoạt động ở bất kỳ đâu trên toàn cụm.
 
-    User --> RB
-    SA --> RB
-    User --> CRB
-    SA --> CRB
+| Khái niệm trực quan | Scope | Ví dụ thực tế |
+| :--- | :--- | :--- |
+| **Role** | Namespace | *"Được phép đọc và ghi Pod trong namespace `demo`"* |
+| **ClusterRole** | Toàn cụm | *"Được phép xem Logs của Pods ở mọi namespace và quản lý Nodes"* |
+| **RoleBinding** | Namespace | *"Gán quyền của Role trên cho Alice (Alice chỉ quậy được ở `demo`)"* |
+| **ClusterRoleBinding** | Toàn cụm | *"Gán quyền của ClusterRole cho Bob (Bob đi cứu hộ toàn cụm)"* |
 
-    RB --> R
-    RB -->|Chỉ áp dụng trong Namespace đó| CR
-    CRB --> CR
-```
+---
 
-#### 🤖 ServiceAccount (SA) là gì?
-* **Khái niệm**: Pod cũng cần gọi Kubernetes API (ví dụ: Prometheus pod cần lấy danh sách pods để crawl metrics). Để làm vậy, Pod cần một danh tính (Identity).
-* **ServiceAccount** chính là danh tính dành cho ứng dụng/Pod chạy trong cụm. Bạn tạo SA, gán quyền cho SA thông qua RoleBinding/ClusterRoleBinding, sau đó gán SA đó vào `spec.serviceAccountName` của Pod.
+### 🛡️ 1.2. Lớp 2: Admission Policy (OPA Gatekeeper)
+Tại sao có RBAC rồi vẫn cần Gatekeeper?
+*   *Tình huống:* Alice là Developer có quyền `create pod` (RBAC cho phép). Nhưng Alice viết manifest pod dùng image `:latest` hoặc không set CPU/RAM. Nếu cụm cho chạy, Pod của Alice có thể ăn hết RAM của Node và làm sập các ứng dụng khác.
+*   **Gatekeeper** sinh ra để kiểm duyệt cấu trúc bên trong của file manifest trước khi nó được ghi vào cơ sở dữ liệu `etcd`.
 
-#### 🛠️ Lệnh debug quyền nhanh: `kubectl auth can-i`
-Trước khi triển khai hoặc khi cần debug lỗi 403 Forbidden, hãy sử dụng tính năng **Giả lập quyền (Impersonation)**:
-```bash
-# Kiểm tra quyền của chính bạn
-kubectl auth can-i create pods -n demo
+Gatekeeper chia luật làm 2 phần:
+1.  **ConstraintTemplate (Khung định nghĩa luật - viết bằng ngôn ngữ Rego):**
+    *   Giống như luật pháp ban hành: *"Tất cả mọi người tham gia giao thông bắt buộc phải đội mũ bảo hiểm có chứng nhận chất lượng"*.
+    *   Nó quy định cách kiểm tra dữ liệu đầu vào và cấu trúc viết luật, nhưng chưa chỉ định áp dụng cụ thể cho ai hay ở đâu.
+2.  **Constraint (Lệnh thực thi luật):**
+    *   Giống như biển báo giao thông cắm ở đường: *"Tuyến đường này bắt buộc đội mũ bảo hiểm, ai vi phạm sẽ bị phạt (deny) hoặc cảnh báo (warn)"*.
+    *   Nó truyền tham số cụ thể và chỉ ra phạm vi áp dụng (ví dụ: áp dụng cho mọi Namespace trừ `kube-system`).
 
-# Kiểm tra quyền của một User khác (Cần quyền admin để chạy lệnh này)
-kubectl auth can-i delete deployments -n prod --as alice
+#### ✍️ Ngôn ngữ viết luật Rego (Đọc hiểu dễ dàng)
+Rego hoạt động theo nguyên lý **"Tìm kiếm vi phạm"**. Bạn định nghĩa một khối luật `violation`. Nếu tất cả các dòng điều kiện bên trong khối đó đều **ĐÚNG (True)**, thì có nghĩa là manifest đó **VI PHẠM** và Gatekeeper sẽ trả về thông báo lỗi, chặn đứng yêu cầu deploy.
 
-# Kiểm tra quyền của một ServiceAccount cụ thể
-kubectl auth can-i list pods -n prod --as system:serviceaccount:prod:app-sa
+*Ví dụ luật cấm chạy dưới quyền Root (`runAsUser: 0`):*
+```rego
+# Nếu dòng 1 ĐÚNG (user chạy là root)
+# VÀ dòng 2 ĐÚNG (không được phép)
+# => VI PHẠM => Chặn!
+violation[{"msg": msg}] {
+  input.review.object.spec.securityContext.runAsUser == 0
+  msg := "Thất bại! Không được phép chạy container dưới quyền Root (user id 0)."
+}
 ```
 
 ---
 
-### 1.3. Lớp 2: Admission Policy (OPA Gatekeeper)
-RBAC chỉ kiểm tra xem *"Alice có quyền tạo Deployment không"*. Nhưng nếu Alice tạo Deployment chứa **image tag `:latest`** hoặc **không khai báo limits**, RBAC vẫn sẽ cho qua. Chúng ta cần Admission Controller để kiểm duyệt cấu trúc Manifest.
+### 🔑 1.3. Lớp 3: Secrets Rotation (External Secrets Operator - ESO)
+Trong thực tế, việc lưu trữ mật khẩu DB dạng plaintext trong Git là cực kỳ nguy hiểm.
+*   **Vấn đề của K8s Secret:** Mặc định chỉ mã hóa dạng `base64` (chỉ cần chạy lệnh `base64 -d` là giải mã được ngay lập tức, hoàn toàn không có tính bảo mật thực sự).
+*   **Giải pháp:** Sử dụng **External Secrets Operator (ESO)** để kết nối két sắt AWS Secrets Manager với cụm Kubernetes.
 
-#### 🔄 Quy trình xử lý Request của Kubernetes API Server
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Client (kubectl/ArgoCD)
-    participant API as API Server
-    participant AuthN as Authentication (Ai?)
-    participant AuthZ as Authorization (RBAC)
-    participant Mutating as Mutating Webhooks (Sửa đổi)
-    participant Schema as Schema Validation
-    participant Validating as Validating Webhooks (Kiểm duyệt)
-    participant Etcd as Etcd Storage
+#### Cách hoạt động của ESO:
+1.  **SecretStore (Chìa khóa két):** Định nghĩa cách cụm Kubernetes đăng nhập vào AWS (dùng Access Key/Secret Key hoặc IAM Role).
+2.  **ExternalSecret (Tờ hướng dẫn đồng bộ):** Định nghĩa:
+    *   *Lấy ở đâu:* Tên secret trên AWS (ví dụ: `demo/db/password`).
+    *   *Tần suất quét:* Quét thay đổi mỗi 15 giây (`refreshInterval: 15s`).
+    *   *Đổ vào đâu:* Tên K8s Secret tự động tạo ra trong cụm (ví dụ: `db-secret`).
+3.  **Xoay vòng không restart pod:** 
+    *   Nếu bạn cấu hình Pod nhận secret qua biến môi trường (`env`), khi mật khẩu đổi, Pod bắt buộc phải restart mới nhận giá trị mới.
+    *   Nếu bạn cấu hình Pod nhận secret qua **Volume Mount (Mount file)**, Kubelet sẽ tự động cập nhật nội dung tệp tin mật khẩu trong container mà không làm pod bị restart ➔ Đảm bảo hệ thống hoạt động liên tục (Zero Downtime).
 
-    User->>API: kubectl apply -f manifest.yaml
-    API->>AuthN: Xác thực danh tính
-    AuthN->>AuthZ: Kiểm tra quyền (RBAC)
-    AuthZ->>Mutating: Chạy các webhook tự động sửa đổi (nhập mặc định, tiêm sidecar...)
-    Mutating->>Schema: Kiểm tra định dạng YAML hợp lệ
-    Schema->>Validating: Chạy các webhook kiểm duyệt (OPA Gatekeeper)
-    Note over Validating: Nếu vi phạm chính sách -> Reject ngay lập tức!
-    Validating->>Etcd: Lưu trữ cấu hình vào DB (Cụm áp dụng thành công)
-    Etcd->>User: Trả về kết quả thành công/thất bại
-```
+---
 
-#### 🚪 OPA Gatekeeper & Policy-as-Code
-OPA (Open Policy Agent) Gatekeeper là một công cụ giúp thực thi chính sách dưới dạng mã (Policy-as-Code) trong Kubernetes bằng ngôn ngữ viết luật **Rego**.
+### 🛡️ 1.4. Lớp 4: Supply Chain Security (Trivy + Cosign)
+Làm thế nào để đảm bảo code từ máy developer đến khi chạy trên cụm không bị sửa đổi lén hoặc chứa virus bảo mật?
 
-Gatekeeper hoạt động dựa trên 2 thành phần chính:
-1. **ConstraintTemplate**:
-   * Định nghĩa khung/mẫu của chính sách bằng ngôn ngữ **Rego**.
-   * Chỉ định các tham số đầu vào (ví dụ: danh sách labels bắt buộc).
-   * Khi deploy, nó tự động sinh ra một Custom Resource Definition (CRD) mới trong cụm.
-2. **Constraint**:
-   * Là một bản thể (Instance) cụ thể sử dụng CRD được sinh ra từ ConstraintTemplate.
-   * Truyền tham số cụ thể vào (ví dụ: bắt buộc label `owner`).
-   * Xác định mục tiêu áp dụng (`match` theo namespace, kinds) và hành vi xử lý (`enforcementAction`).
-
-#### ⚠️ Chế độ Warn (Audit) vs Deny (Enforce)
-* **`enforcementAction: dryrun` hoặc `warn`**: Ghi nhận tài nguyên vi phạm vào log/status hoặc cảnh báo ra console, **KHÔNG** chặn deploy. Thích hợp để test chính sách mới hoặc kiểm tra các ứng dụng cũ đang chạy có vi phạm không.
-* **`enforcementAction: deny`**: Từ chối ngay lập tức các manifest vi phạm. Áp dụng khi chính sách đã ổn định.
+1.  **Bước 1: Quét lỗ hổng (Trivy Scan) trong CI/CD:**
+    *   Trivy sẽ tự động rà soát các thư viện code và hệ điều hành base image xem có chứa lỗ hổng bảo mật nghiêm trọng (CVE `HIGH` hoặc `CRITICAL`) không.
+    *   Nếu có lỗi nghiêm trọng ➔ Pipeline đỏ (Fail CI), không cho phép đẩy lên kho chứa (Registry).
+2.  **Bước 2: Ký số (Cosign Sign):**
+    *   Nếu image sạch sẽ, pipeline CI/CD sử dụng một **Private Key** bảo mật để dán một chữ ký số công khai lên registry đi kèm với image đó.
+3.  **Bước 3: Xác thực đầu vào (Sigstore Policy Controller):**
+    *   Khi bạn chạy lệnh deploy image lên Kubernetes, **Policy Controller** sẽ chặn lại.
+    *   Nó sử dụng **Public Key** được cấu hình sẵn trong cụm để giải mã và kiểm tra chữ ký số của image trên Registry.
+    *   Nếu chữ ký hợp lệ ➔ Cho phép chạy.
+    *   Nếu image chưa ký hoặc bị giả mạo chữ ký ➔ Từ chối chạy ngay lập tức.
 
 ---
 
 ## 🛠️ PHẦN 2: LỘ TRÌNH THỰC HÀNH (Cần làm gì?)
 
-Bạn cần hoàn thành các bài Lab dưới đây và triển khai mọi thứ thông qua mô hình **GitOps (ArgoCD)**, tuyệt đối không dùng lệnh `kubectl apply` tay trên production.
+Bạn cần hoàn thành các bài Lab dưới đây và triển khai mọi thứ thông qua mô hình **GitOps (ArgoCD)**.
 
 ```
-Thư mục dự án khuyến nghị:
+Thư mục dự án sau khi tổ chức lại:
 └── cloud/w10/
-    ├── rbac/
-    │   ├── roles.yaml             # Chứa các Role và ClusterRole
-    │   └── rolebindings.yaml      # Gán quyền cho alice, bob, carol
-    └── gatekeeper/
-        └── constraints/           # Chứa 4 Constraints + 1 Custom Policy
+    ├── argocd/                     # Quản lý khai báo ứng dụng ArgoCD
+    ├── lab1/                       # Toàn bộ bài thực hành buổi sáng
+    │   ├── rbac/                   # Định nghĩa Roles và RoleBindings
+    │   ├── gatekeeper/             # Định nghĩa OPA Constraints & Templates
+    │   └── scratch/                # Các file test thử nghiệm Allowed / Disallowed
+    └── lab2/                       # Toàn bộ bài thực hành buổi chiều
+        ├── eso/                    # Cấu hình SecretStore và ExternalSecret
+        ├── policies/               # Cấu hình ClusterImagePolicy cho Cosign
+        └── runbooks/               # Sách hướng dẫn chạy và exception ADR
 ```
-
-### 📍 Bước chuẩn bị
-1. **Fork repository** chứa mã nguồn Platform của bạn.
-2. Sửa file ứng dụng gốc của ArgoCD (`cloud/w10/argocd/root.yaml`) để trỏ `repoURL` về repository bạn vừa fork.
-3. Xác nhận toàn bộ Platform từ W9 được đồng bộ xanh (`Synced`/`Healthy`).
 
 ---
 
@@ -162,7 +146,7 @@ Tạo và cấu hình phân quyền cho 3 User giả lập với các đặc quy
 * **alice**: Tạo một `Role` trong namespace `demo` định nghĩa đầy đủ verbs (`*` hoặc cụ thể) cho các resources cần thiết. Liên kết bằng `RoleBinding` trong namespace `demo` cho `User` alice.
 * **bob**: Tạo một `ClusterRole` chứa quyền với resource `pods` và subresources như `pods/log`, `pods/exec`. Liên kết bằng `ClusterRoleBinding` cho `User` bob.
 * **carol**: Tạo một `ClusterRole` chỉ chứa các verbs `get`, `list`, `watch` cho tất cả các tài nguyên cơ bản. Liên kết bằng `ClusterRoleBinding` cho `User` carol.
-* Đừng quên tạo file ArgoCD Application `cloud/w10/argocd/apps/rbac.yaml` để quản lý thư mục `cloud/w10/rbac/`.
+* Đừng quên tạo file ArgoCD Application `cloud/w10/argocd/apps/rbac.yaml` để quản lý thư mục `cloud/w10/lab1/rbac/`.
 
 ---
 
