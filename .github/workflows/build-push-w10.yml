@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/w10-api
+  IMAGE_NAME: ${{ github.repository_owner }}/w10-api-huyvlt
 
 jobs:
   build-and-push:
@@ -102,7 +102,7 @@ jobs:
 
       - name: Update rollout.yaml with new version
         run: |
-          sed -i "s|image: ghcr.io/.*/w10-api:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.version }}|g" cloud/w10/lab1/app-api/rollout.yaml
+          sed -i "s|image: ghcr.io/.*/w10-api-huyvlt:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.version }}|g" cloud/w10/lab1/app-api/rollout.yaml
           sed -i "s|value: \"v.*\"|value: \"v${{ steps.semver.outputs.version }}\"|g" cloud/w10/lab1/app-api/rollout.yaml
 
       - name: Commit and push version update
